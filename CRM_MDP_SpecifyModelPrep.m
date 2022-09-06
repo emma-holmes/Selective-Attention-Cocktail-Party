@@ -38,7 +38,7 @@ function CRM_MDP_SpecifyModelPrep(hz, onsets, ID, n, disp_plots, alpha, tau)
 % attention:
 % Holmes, E., Parr, T., Griffiths, T. D. & Friston, K. J. (2021). Active 
 % inference, selective attention, and the cocktail party problem. Neurosci. 
-% Biobehav. Rev. 131, 1288–1304.
+% Biobehav. Rev. 131, 1288â€“1304.
  
 % Emma Holmes
  
@@ -339,6 +339,12 @@ for t = 1:length(onsets)
     fprintf('\nInverting model...');
     MDP   = spm_MDP_VB_X(mdp);
     
+    % Save all variables    
+    filename    = fullfile(outDir, sprintf('%s_outputs_%d_%d', ...
+        ID, talkerOnset, n));
+    fprintf('\nSaving outputs to file: %s', filename);
+    save(filename);
+    
     % Plotting
     %----------
     if disp_plots
@@ -354,11 +360,25 @@ for t = 1:length(onsets)
         % Plot neural
         spm_figure('GetWin','Figure 2'); clf
         [~,~,LFP_plot_x,LFP_plot_y] = spm_MDP_VB_LFP_edit(MDP,[5;5],1,0,...
-            sprintf('%d_tau%d',n,mdp.tau));     
+            sprintf('%d_tau%d',n,mdp.tau));  
         [~, peak_idx]   = findpeaks(LFP_plot_y);
-        peak_idx        = peak_idx([1:2:23,24]);
-        peak_vals       = LFP_plot_y(peak_idx); 
-        peak_times      = LFP_plot_x(peak_idx);
+        try
+            peak_idx        = peak_idx([1:2:23,24]);
+            peak_vals       = LFP_plot_y(peak_idx); 
+            peak_times      = LFP_plot_x(peak_idx);
+        catch            
+            try
+                peak_idx        = peak_idx(1:2:end);
+                peak_vals       = LFP_plot_y(peak_idx); 
+                peak_times      = LFP_plot_x(peak_idx);                
+            catch errmsg
+                peak_idx
+                size(peak_idx)
+                size(LFP_plot_x)
+                size(LFP_plot_y)
+                rethrow(errmsg);
+            end
+        end
         figure; 
         plot(LFP_plot_x, LFP_plot_y, 'LineWidth', 1.5, 'Color', [.5, .5, .5]);
         hold on; 
@@ -380,14 +400,14 @@ for t = 1:length(onsets)
         set(gcf, 'PaperPositionMode', 'auto');
         filename    = fullfile(outDir, sprintf('%s_PLOT_ERP_%d_%d', ...
             ID, talkerOnset, n));
-        %print(gcf, filename, '-dtiff', '-r600'); 
-    end
+        %print(gcf, filename, '-dtiff', '-r600');    
     
-    % Save all variables    
-    filename    = fullfile(outDir, sprintf('%s_outputs_%d_%d', ...
-        ID, talkerOnset, n));
-    fprintf('\nSaving outputs to file: %s', filename);
-    save(filename);
+        % Save all variables    
+        filename    = fullfile(outDir, sprintf('%s_outputs_%d_%d', ...
+            ID, talkerOnset, n));
+        fprintf('\nSaving outputs to file: %s', filename);
+        save(filename);
+    end
     
     % Print time taken
     duration = toc(trialTime) / 60;
